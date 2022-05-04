@@ -8,12 +8,15 @@ import 'theme.dart' show rk0ccLightTheme, rk0ccDarkTheme;
 
 void main() async {
   if (!kIsWeb) {
+    // Disallow run as desktop and mobile app.
     throw UnsupportedError(
         "This is a web application, and only run on browser.");
   }
 
   await Hive.initFlutter();
   Box settingBox = await Hive.openBox("setting");
+
+  // Initalize setting data if no record.
   if (!settingBox.containsKey("dark_mode")) {
     await settingBox.put("dark_mode", false);
   }
@@ -21,7 +24,9 @@ void main() async {
   runApp(const Rk0ccStatus());
 }
 
+/// Web app entry point of reporting rk0cc.xyz's API status.
 class Rk0ccStatus extends StatelessWidget {
+  /// Construct the app.
   const Rk0ccStatus({Key? key}) : super(key: key);
 
   @override
@@ -37,6 +42,7 @@ class Rk0ccStatus extends StatelessWidget {
           title: "API server status in rk0cc.xyz"));
 }
 
+/// Context uses for rendering API server status.
 class Rk0ccStatusPage extends StatelessWidget {
   final Box<dynamic> _hiveSetting;
   final List<APIStatusCard> _statusCards = <APIStatusCard>[
@@ -50,6 +56,8 @@ class Rk0ccStatusPage extends StatelessWidget {
     }, title: "GAF API")
   ];
 
+  /// Construct the page with [hiveSetting] which come from
+  /// [ValueListenableBuilder].
   Rk0ccStatusPage({Key? key, required Box<dynamic> hiveSetting})
       : this._hiveSetting = hiveSetting,
         super(key: key);
@@ -88,7 +96,18 @@ class Rk0ccStatusPage extends StatelessWidget {
                   if (await url_launcher.canLaunchUrl(site)) {
                     url_launcher.launchUrl(site);
                   }
-                })
+                }),
+            ListTile(
+              leading: Icon(Icons.email_outlined),
+              title: const Text("Contact rk0cc"),
+              onTap: () async {
+                var mail = Uri.parse("mailto:enquiry@rk0cc.xyz");
+
+                if (await url_launcher.canLaunchUrl(mail)) {
+                  url_launcher.launchUrl(mail);
+                }
+              },
+            )
           ])),
           body: Center(
               child: Container(

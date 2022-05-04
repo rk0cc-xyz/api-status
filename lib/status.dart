@@ -19,7 +19,9 @@ enum APIStatusIndicator {
   client_error
 }
 
+/// An extension for defining [Widget] render when reporting status.
 extension APIStatusIndicatorExtension on APIStatusIndicator {
+  /// Indicate [Color] uses for repersenting current API status.
   Color get statusColour {
     switch (this) {
       case APIStatusIndicator.normal:
@@ -35,6 +37,7 @@ extension APIStatusIndicatorExtension on APIStatusIndicator {
     }
   }
 
+  /// Status description.
   String get description {
     switch (this) {
       case APIStatusIndicator.normal:
@@ -52,12 +55,15 @@ extension APIStatusIndicatorExtension on APIStatusIndicator {
 }
 
 extension on APIStatusIndicator {
+  /// Generate [CircleAvatar] with [statusColour] for indicate API status in
+  /// [Widget].
   CircleAvatar get statusDot => CircleAvatar(
         backgroundColor: this.statusColour,
         maxRadius: 6,
         minRadius: 4,
       );
 
+  /// Render [description] of the status.
   ListTile get descriptionTile => ListTile(
       leading: statusDot,
       contentPadding: const EdgeInsets.all(4),
@@ -65,6 +71,8 @@ extension on APIStatusIndicator {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300)));
 }
 
+/// A callback for opening [AlertDialog] and display [APIStatusIndicator]'s
+/// colour's meaning.
 void openStatusHelp(BuildContext context) => showDialog(
     context: context,
     builder: (context) => AlertDialog(
@@ -81,10 +89,15 @@ void openStatusHelp(BuildContext context) => showDialog(
                   child: const Text("Close"))
             ]));
 
+/// A widget for rendering API status.
 class APIStatusField extends StatefulWidget {
   final String _apisite;
+
+  /// Title uses for displaying the field.
   final String label;
 
+  /// Build new widget with specified [apisite] which under rk0cc.xyz's API path
+  /// and apply [label] for display title.
   APIStatusField({Key? key, required String apisite, required this.label})
       : this._apisite = (() {
           String og = apisite;
@@ -106,7 +119,14 @@ class APIStatusField extends StatefulWidget {
 }
 
 class _APIStatusFieldState extends State<APIStatusField> {
+  /*
+    Do not process in FutureBuilder directly.
+
+    If did it, it make a new request when window resized every pixel.
+  */
   late final Future<int> _apistatus;
+
+  String get _reqsite => "https://www.rk0cc.xyz/api${widget._apisite}";
 
   @override
   void initState() {
@@ -114,8 +134,7 @@ class _APIStatusFieldState extends State<APIStatusField> {
     _apistatus = Future(() async {
       var c = http.Client();
 
-      http.Request req = http.Request(
-          "HEAD", Uri.parse("https://www.rk0cc.xyz/api${widget._apisite}"));
+      http.Request req = http.Request("HEAD", Uri.parse(_reqsite));
 
       var resp;
       int tolerance = 0;
@@ -139,14 +158,32 @@ class _APIStatusFieldState extends State<APIStatusField> {
     });
   }
 
-  ListTile _listTileBuilder(BuildContext context,
-      {required APIStatusIndicator status}) {
-    return ListTile(
-        leading: status.statusDot,
-        title: Text(widget.label,
-            style:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.normal)));
-  }
+  Widget _listTileBuilder(BuildContext context,
+          {required APIStatusIndicator status}) =>
+      Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 12),
+          child: Row(
+            children: <Widget>[
+              Padding(
+                  padding: const EdgeInsets.only(left: 8, right: 16),
+                  child: SizedBox.square(
+                      dimension: 24, child: Center(child: status.statusDot))),
+              Expanded(
+                  child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Text>[
+                  Text(widget.label,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.normal)),
+                  Text(_reqsite,
+                      style: TextStyle(
+                          color: Color(0xff8f8f8f),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300))
+                ],
+              ))
+            ],
+          ));
 
   @override
   Widget build(BuildContext context) => FutureBuilder<int>(
@@ -175,10 +212,17 @@ class _APIStatusFieldState extends State<APIStatusField> {
       });
 }
 
+/// Build a [Card] for containing entire API status.
 class APIStatusCard extends StatelessWidget {
   final Map<String, String> _sitemap;
+
+  /// Title of this [Card].
   final String title;
 
+  /// Construct a card with provided [sitemap] and the [title].
+  ///
+  /// [sitemap]'s key is the [APIStatusField]'s title and value is path to the
+  /// API.
   APIStatusCard(
       {Key? key, required Map<String, String> sitemap, required this.title})
       : assert(sitemap.isNotEmpty),
